@@ -32,7 +32,7 @@ let messageQueue = () => {
             };
         });
         return {
-            data: JSON.stringify(data),
+            data: stringify(data),
             result
         };
     };
@@ -41,6 +41,15 @@ let messageQueue = () => {
         produce,
         consume
     };
+};
+
+let stringify = (data) => {
+    try {
+        return JSON.stringify(data);
+    } catch(err) {
+        console && console.log && console.log(data); // eslint-disable-line
+        throw err;
+    }
 };
 
 module.exports = messageQueue;
