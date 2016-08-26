@@ -1,8 +1,10 @@
 'use strict';
 
 let {
-    messageQueue, isArray
-} = require('./util');
+    likeArray
+} = require('basetype');
+
+let messageQueue = require('consume-queue');
 
 module.exports = ({
     requestChannel,
@@ -14,10 +16,10 @@ module.exports = ({
         consume, produce
     } = messageQueue();
 
-    listen(responseChannel, consume);
+    listen(responseChannel, (arg) => consume(JSON.parse(arg)));
 
     let call = (name, args = []) => {
-        if (!isArray(args)) {
+        if (!likeArray(args)) {
             throw new TypeError('Expect array for call\' args.');
         }
         let {
@@ -28,9 +30,18 @@ module.exports = ({
         });
 
         //
-        send(requestChannel, data);
+        send(requestChannel, stringify(data));
         return result;
     };
 
     return call;
+};
+
+let stringify = (data) => {
+    try {
+        return JSON.stringify(data);
+    } catch (err) {
+        console && console.log && console.log(data); // eslint-disable-line
+        throw err;
+    }
 };

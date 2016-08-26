@@ -2,7 +2,7 @@
 
 let {
     isPromise
-} = require('./util');
+} = require('basetype');
 
 // TODO support register function
 let dealer = ({
