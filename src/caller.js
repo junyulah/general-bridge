@@ -6,6 +6,12 @@ let {
 
 let messageQueue = require('consume-queue');
 
+/**
+ * call
+ *      1. can send message
+ *      2. can accept message
+ */
+
 module.exports = ({
     requestChannel,
     responseChannel,

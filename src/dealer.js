@@ -5,6 +5,11 @@ let {
 } = require('basetype');
 
 // TODO support register function
+/**
+ * listen: (string, (string) => void) => void
+ *
+ * send: (string, string) => void
+ */
 let dealer = ({
     sandbox,
     requestChannel,
