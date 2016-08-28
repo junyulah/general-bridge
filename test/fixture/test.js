@@ -1,7 +1,15 @@
 'use strict';
 
-let front = require('../../apply/process/front');
+let {
+    child
+} = require('../../apply/process');
 
-front('test_process', {
-    add: (a, b) => a + b
+let call = child({
+    add: (a, b) => a + b,
+
+    doubleSub: (a, b) => {
+        return call('sub', [a, b]).then(res => {
+            return res * 2;
+        });
+    }
 });

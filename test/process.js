@@ -6,19 +6,28 @@ let {
 
 let path = require('path');
 
-let back = require('../apply/process/back');
+let assert = require('assert');
+
+let {
+    parent
+} = require('../apply/process');
 
 describe('process', () => {
     it('base', () => {
         let child = fork(path.join(__dirname, './fixture/test.js'));
-        let {
-            call
-        } = back(child, 'test_process', {
+
+        let call = parent(child, {
             sub: (a, b) => a - b
         });
 
-        return call('add', [1, 2]).then(ret => {
-            console.log(ret);
-        });
+        return Promise.all([
+            call('add', [1, 2]).then(ret => {
+                assert.equal(ret, 3);
+            }),
+
+            call('doubleSub', [1, 2]).then(ret => {
+                assert.equal(ret, -2);
+            })
+        ]);
     });
 });
