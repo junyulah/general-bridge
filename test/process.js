@@ -31,7 +31,7 @@ describe('process', () => {
         ]);
     });
 
-    it('base', (done) => {
+    it('missing sandbox', (done) => {
         let child = fork(path.join(__dirname, './fixture/test.js'));
 
         let call = parent(child, {
@@ -56,7 +56,7 @@ describe('process', () => {
         });
     });
 
-    it('detect', () => {
+    it('callback', () => {
         let child = fork(path.join(__dirname, './fixture/test.js'));
 
         let call = parent(child);
