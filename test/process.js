@@ -30,4 +30,29 @@ describe('process', () => {
             })
         ]);
     });
+
+    it('base', (done) => {
+        let child = fork(path.join(__dirname, './fixture/test.js'));
+
+        let call = parent(child, {
+            sub: (a, b) => a - b
+        });
+
+        call('detect', null, 'miss').catch(err => {
+            assert.equal(err.msg, 'Error: missing sandbox for miss');
+            done();
+        });
+    });
+
+    it('detect', () => {
+        let child = fork(path.join(__dirname, './fixture/test.js'));
+
+        let call = parent(child, {
+            sub: (a, b) => a - b
+        });
+
+        return call('detect', null, 'system', (ret) => {
+            assert.equal(ret, true);
+        });
+    });
 });

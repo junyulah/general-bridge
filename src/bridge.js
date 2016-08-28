@@ -4,11 +4,47 @@ let {
     likeArray, funType, isFalsy, or, isFunction, isString, isPromise, isObject
 } = require('basetype');
 
-let {
-    get
-} = require('jsenhance');
-
 let messageQueue = require('consume-queue');
+
+let callFunction = require('./callFunction');
+
+let id = v => v;
+
+let listenHandler = (reqHandler, resHandler) => ({
+    type, data
+}, send) => {
+    if (type === 'response') {
+        return resHandler(data);
+    } else if (type === 'request') {
+        return reqHandler(data, send);
+    }
+};
+
+let sender = (type, send) => (data) => {
+    return send({
+        type, data
+    });
+};
+
+let wrapListen = (listen) => {
+    if (!listen) {
+        return (handle) => (data, ret) => {
+            if (!isPromise(ret)) {
+                throw new Error(`there is no listener and response of send is not a promise. response is ${ret}`);
+            }
+            ret.then(handle).catch(err => handle({
+                error: err,
+                id: data.id
+            }));
+        };
+    } else {
+        return (handle, send) => {
+            listen(handle, send);
+
+            return id;
+        };
+    }
+};
 
 /**
  * call
@@ -25,34 +61,50 @@ let caller = funType((send, listen) => {
         consume, produce
     } = messageQueue();
 
-    if (listen) {
-        listen(consume);
-    }
+    listen = wrapListen(listen);
 
-    return funType((name, args = []) => {
+    // data = {id, error, data}
+    let listenHandle = listenHandler(null, consume);
+
+    // data = {id, source, time}
+    let sendReq = sender('request', send);
+
+    let watch = listen(listenHandle);
+
+    let sendReqData = (data) => {
+        let ret = sendReq(data);
+        watch(data, ret);
+    };
+
+    let call = funType((name, args = [], type = 'public') => {
         // data = {id, source, time}
         let {
             data, result
         } = produce({
-            name, args
+            name, args, type
         });
 
         //
-        let ret = send(data);
-        if (!listen) {
-            ret.then(res => {
-                consume(res);
-            }).catch(err => {
-                consume({
-                    error: err,
-                    id: data.id
-                });
-            });
-        }
+        sendReqData(data);
 
         return result;
-    }, [isString, or(likeArray, isFalsy)]);
+    }, [isString, or(likeArray, isFalsy), or(isString, isFalsy)]);
+
+    // detect connection
+    detect(call);
+
+    return call;
 }, [isFunction, or(isFunction, isFalsy)]);
+
+let detect = (call) => {
+    // detect connection
+    call.detect = (tryTimes = 10) => {
+        if (tryTimes < 0) return Promise.resolve(false);
+        return call('detect', null, 'system').catch(() => {
+            return call.detect(--tryTimes);
+        });
+    };
+};
 
 /**
  * deal
@@ -63,70 +115,65 @@ let caller = funType((send, listen) => {
  * listen: string -> void -> void
  */
 
-let dealer = funType((sandbox, listen) => {
+let dealer = funType((sandbox = {}, listen) => {
+    let box = {
+        sandbox,
+        systembox: {
+            detect: () => true
+        }
+    };
+
+    // reqData = {id, source, time}
     let handle = (reqData, send) => {
-        let ret = getResponseData(sandbox, reqData);
+        let sendRes = sender('response', send);
+
+        let sendData = (data) => {
+            sendRes(data);
+            return data;
+        };
+
+        let ret = dealReq(reqData, box);
+
         if (isPromise(ret.data)) {
-            return ret.data.then((inData) => {
-                let data = {
-                    id: ret.id,
-                    data: inData
-                };
-                send(data);
-                return data;
-            }).catch((err = '') => {
-                let data = {
-                    id: ret.id,
-                    error: err.toString()
-                };
-                send(data);
-                return data;
-            });
+            return ret.data.then((inData) => sendData({
+                id: ret.id,
+                data: inData
+            })).catch((err = '') => sendData({
+                id: ret.id,
+                error: err.toString()
+            }));
         } else {
-            send(ret);
-            return ret;
+            return sendData(ret);
         }
     };
 
     // listen for request, and handle it
-    listen(handle);
-}, [isObject, isFunction]);
+    listen(listenHandler(handle, null));
+}, [or(isObject, isFalsy), isFunction]);
 
-let getResponseData = (sandbox, reqData) => {
-    let {
-        id, source
-    } = reqData;
-
-    let {
-        args, name
-    } = source;
-
-    let fun = get(sandbox, name);
-    if (!fun && typeof fun !== 'function') {
-        return {
-            id,
-            error: `missing function ${name}`
-        };
+let dealReq = (reqData, {
+    sandbox, systembox
+}) => {
+    let map = null;
+    let type = reqData.source.type;
+    if (type === 'public') {
+        map = sandbox;
+    } else if (type === 'system') {
+        map = systembox;
     } else {
-        return apply(fun, args, id);
-    }
-};
-
-let apply = (fun, args, id) => {
-    try {
+        let err = new Error(`missing sandbox for ${type}`);
         return {
-            id,
-            data: fun.apply(undefined, args)
-        };
-    } catch (err) {
-        return {
-            id,
             error: {
-                message: err.toString(),
+                msg: err.toString(),
                 stack: err.stack
-            }
+            },
+            id: reqData.id
         };
     }
+
+    // process args
+
+    return callFunction(map, reqData);
 };
 
 module.exports = {
