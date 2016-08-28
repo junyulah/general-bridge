@@ -8,13 +8,13 @@ let messageQueue = require('consume-queue');
 
 let callFunction = require('./callFunction');
 
-let id = v => v;
+let wrapListen = require('./wrapListen');
 
 let listenHandler = (reqHandler, resHandler) => ({
     type, data
 }, send) => {
     if (type === 'response') {
-        return resHandler(data);
+        return resHandler(data, send);
     } else if (type === 'request') {
         return reqHandler(data, send);
     }
@@ -24,25 +24,6 @@ let sender = (type, send) => (data) => {
     return send({
         type, data
     });
-};
-
-let wrapListen = (listen, send) => {
-    if (!listen) {
-        return (handle) => (data, ret) => {
-            if (!isPromise(ret)) {
-                throw new Error(`there is no listener and response of send is not a promise. response is ${ret}`);
-            }
-            ret.then(handle).catch(err => handle({
-                error: err,
-                id: data.id
-            }));
-        };
-    } else {
-        return (handle, sendHandle = send) => {
-            listen(handle, sendHandle);
-            return id;
-        };
-    }
 };
 
 let pc = funType((listen, send, sandbox) => {
@@ -79,50 +60,6 @@ let pc = funType((listen, send, sandbox) => {
     return call;
 }, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
 
-/**
- * call
- *      1. can send message
- *      2. can accept message
- *
- * send: string -> void
- *
- * listen: (string -> void) -> void
- */
-
-let caller = funType((send, listen) => {
-    let {
-        consume, produce
-    } = messageQueue();
-
-    listen = wrapListen(listen, send);
-
-    // data = {id, error, data}
-    let listenHandle = listenHandler(null, consume);
-
-    // data = {id, source, time}
-    let sendReq = sender('request', send);
-
-    let watch = listen(listenHandle);
-
-    let call = funType((name, args = [], type = 'public') => {
-        // data = {id, source, time}
-        let {
-            data, result
-        } = produce({
-            name, args, type
-        });
-
-        watch(data, sendReq(data));
-
-        return result;
-    }, [isString, or(likeArray, isFalsy), or(isString, isFalsy)]);
-
-    // detect connection
-    detect(call);
-
-    return call;
-}, [isFunction, or(isFunction, isFalsy)]);
-
 let detect = (call) => {
     // detect connection
     call.detect = (tryTimes = 10) => {
@@ -132,22 +69,6 @@ let detect = (call) => {
         });
     };
 };
-
-/**
- * deal
- *      1. can accept message
- *      2. can send message
- *
- * send: string -> void
- * listen: string -> void -> void
- */
-
-let dealer = funType((sandbox = {}, listen) => {
-    listen = wrapListen(listen);
-
-    // listen for request, and handle it
-    listen(listenHandler(reqHandler(sandbox), null));
-}, [or(isObject, isFalsy), isFunction]);
 
 let reqHandler = (sandbox) => {
     let box = {
@@ -208,7 +129,5 @@ let dealReq = (reqData, {
 };
 
 module.exports = {
-    caller,
-    dealer,
     pc
 };
