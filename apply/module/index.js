@@ -1,7 +1,7 @@
 'use strict';
 
 let {
-    caller, dealer
+    pc
 } = require('../..');
 
 module.exports = () => {
@@ -17,18 +17,22 @@ module.exports = () => {
         };
         modules[name] = module;
 
-        dealer(sandbox, (handler) => {
+        pc((handler) => {
             module.dealHandler = ({
                 msg, callHandler
             }) => {
                 return handler(msg, callHandler);
             };
-        });
+
+        }, null, sandbox);
     };
 
     let moduleCaller = (moduleName) => {
         let callHandler = null;
-        return caller((msg) => {
+
+        return pc((handler) => {
+            callHandler = handler;
+        }, (msg) => {
             let module = modules[moduleName];
             if (!module) {
                 throw new Error(`do not exist module ${moduleName}`);
@@ -37,8 +41,6 @@ module.exports = () => {
                 msg,
                 callHandler
             });
-        }, (handler) => {
-            callHandler = handler;
         });
     };
 

@@ -26,7 +26,7 @@ let sender = (type, send) => (data) => {
     });
 };
 
-let wrapListen = (listen) => {
+let wrapListen = (listen, send) => {
     if (!listen) {
         return (handle) => (data, ret) => {
             if (!isPromise(ret)) {
@@ -38,13 +38,46 @@ let wrapListen = (listen) => {
             }));
         };
     } else {
-        return (handle, send) => {
-            listen(handle, send);
-
+        return (handle, sendHandle = send) => {
+            listen(handle, sendHandle);
             return id;
         };
     }
 };
+
+let pc = funType((listen, send, sandbox) => {
+    // data = {id, error, data}
+    let {
+        consume, produce
+    } = messageQueue();
+
+    listen = wrapListen(listen, send);
+
+    let listenHandle = listenHandler(reqHandler(sandbox), consume);
+
+    // data = {id, source, time}
+    let sendReq = sender('request', send);
+
+    let watch = listen(listenHandle);
+
+    let call = funType((name, args = [], type = 'public') => {
+        // data = {id, source, time}
+        let {
+            data, result
+        } = produce({
+            name, args, type
+        });
+
+        watch(data, sendReq(data));
+
+        return result;
+    }, [isString, or(likeArray, isFalsy), or(isString, isFalsy)]);
+
+    // detect connection
+    detect(call);
+
+    return call;
+}, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
 
 /**
  * call
@@ -61,7 +94,7 @@ let caller = funType((send, listen) => {
         consume, produce
     } = messageQueue();
 
-    listen = wrapListen(listen);
+    listen = wrapListen(listen, send);
 
     // data = {id, error, data}
     let listenHandle = listenHandler(null, consume);
@@ -71,11 +104,6 @@ let caller = funType((send, listen) => {
 
     let watch = listen(listenHandle);
 
-    let sendReqData = (data) => {
-        let ret = sendReq(data);
-        watch(data, ret);
-    };
-
     let call = funType((name, args = [], type = 'public') => {
         // data = {id, source, time}
         let {
@@ -84,8 +112,7 @@ let caller = funType((send, listen) => {
             name, args, type
         });
 
-        //
-        sendReqData(data);
+        watch(data, sendReq(data));
 
         return result;
     }, [isString, or(likeArray, isFalsy), or(isString, isFalsy)]);
@@ -116,6 +143,13 @@ let detect = (call) => {
  */
 
 let dealer = funType((sandbox = {}, listen) => {
+    listen = wrapListen(listen);
+
+    // listen for request, and handle it
+    listen(listenHandler(reqHandler(sandbox), null));
+}, [or(isObject, isFalsy), isFunction]);
+
+let reqHandler = (sandbox) => {
     let box = {
         sandbox,
         systembox: {
@@ -124,7 +158,7 @@ let dealer = funType((sandbox = {}, listen) => {
     };
 
     // reqData = {id, source, time}
-    let handle = (reqData, send) => {
+    return (reqData, send) => {
         let sendRes = sender('response', send);
 
         let sendData = (data) => {
@@ -146,10 +180,7 @@ let dealer = funType((sandbox = {}, listen) => {
             return sendData(ret);
         }
     };
-
-    // listen for request, and handle it
-    listen(listenHandler(handle, null));
-}, [or(isObject, isFalsy), isFunction]);
+};
 
 let dealReq = (reqData, {
     sandbox, systembox
@@ -178,5 +209,6 @@ let dealReq = (reqData, {
 
 module.exports = {
     caller,
-    dealer
+    dealer,
+    pc
 };

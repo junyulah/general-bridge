@@ -1,20 +1,20 @@
 'use strict';
 
 let {
-    dealer, caller, stringify, parseJSON
+    stringify, parseJSON, pc
 } = require('../..');
 
 module.exports = {
     reqCaller: (request) => {
-        return caller((msg) => request(stringify(msg)).then(parseJSON));
+        return pc(null, (msg) => request(stringify(msg)).then(parseJSON));
     },
 
     midder: (sandbox) => {
         let reqHandler = null;
 
-        dealer(sandbox, (handler) => {
+        pc((handler) => {
             reqHandler = handler;
-        });
+        }, null, sandbox);
 
         return (requestData, res) => {
             requestData = parseJSON(requestData);
