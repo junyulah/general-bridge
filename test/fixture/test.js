@@ -11,5 +11,9 @@ let call = child({
         return call('sub', [a, b]).then(res => {
             return res * 2;
         });
+    },
+
+    testCallback: (fun, a, b) => {
+        return fun(a, b);
     }
 });

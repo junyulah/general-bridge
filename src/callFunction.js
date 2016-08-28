@@ -4,39 +4,19 @@ let {
     get
 } = require('jsenhance');
 
-let apply = (fun, args, id) => {
+let apply = (fun, args) => {
     try {
-        return {
-            id,
-            data: fun.apply(undefined, args)
-        };
+        return fun.apply(undefined, args);
     } catch (err) {
-        return {
-            id,
-            error: {
-                message: err.toString(),
-                stack: err.stack
-            }
-        };
+        return err;
     }
 };
 
-module.exports = (map, reqData) => {
-    let {
-        id, source
-    } = reqData;
-
-    let {
-        args, name
-    } = source;
-
+module.exports = (map, name, args) => {
     let fun = get(map, name);
     if (!fun && typeof fun !== 'function') {
-        return {
-            id,
-            error: `missing function ${name}`
-        };
+        return new Error(`missing function ${name}`);
     } else {
-        return apply(fun, args, id);
+        return apply(fun, args);
     }
 };

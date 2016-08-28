@@ -1,7 +1,7 @@
 'use strict';
 
 let {
-    likeArray, funType, isFalsy, or, isFunction, isString, isPromise, isObject
+    likeArray, funType, isFalsy, or, isFunction, isString, isObject
 } = require('basetype');
 
 let messageQueue = require('consume-queue');
@@ -10,13 +10,19 @@ let callFunction = require('./callFunction');
 
 let wrapListen = require('./wrapListen');
 
-let listenHandler = (reqHandler, resHandler) => ({
+let idgener = require('idgener');
+
+let {
+    map
+} = require('bolzano');
+
+let listenHandler = (reqHandle, resHandle) => ({
     type, data
 }, send) => {
     if (type === 'response') {
-        return resHandler(data, send);
+        return resHandle(data, send);
     } else if (type === 'request') {
-        return reqHandler(data, send);
+        return reqHandle(data, send);
     }
 };
 
@@ -32,9 +38,32 @@ let pc = funType((listen, send, sandbox) => {
         consume, produce
     } = messageQueue();
 
+    let box = getBox(sandbox);
+
+    // reqData = {id, source, time}
+    let reqHandler = ({
+        id, source
+    }, send) => {
+        let sendRes = sender('response', send);
+
+        let ret = dealReq(source, box, call);
+
+        return Promise.resolve(ret).then((ret) => {
+            sendRes({
+                data: (ret instanceof Error) ? null : ret,
+                error: (ret instanceof Error) ? {
+                    msg: ret.toString(),
+                    stack: ret.stack
+                } : null,
+                id
+            });
+            return ret;
+        });
+    };
+
     listen = wrapListen(listen, send);
 
-    let listenHandle = listenHandler(reqHandler(sandbox), consume);
+    let listenHandle = listenHandler(reqHandler, consume);
 
     // data = {id, source, time}
     let sendReq = sender('request', send);
@@ -45,9 +74,7 @@ let pc = funType((listen, send, sandbox) => {
         // data = {id, source, time}
         let {
             data, result
-        } = produce({
-            name, args, type
-        });
+        } = produce(packReq(name, args, type, box));
 
         watch(data, sendReq(data));
 
@@ -60,6 +87,34 @@ let pc = funType((listen, send, sandbox) => {
     return call;
 }, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
 
+let getBox = (sandbox) => {
+    let box = {
+        systembox: {
+            detect: () => true,
+
+            addCallback: (callback) => {
+                let id = idgener();
+                box.callbackMap[id] = callback;
+                return id;
+            },
+
+            callback: (id, args) => {
+                let fun = box.callbackMap[id];
+                if (!fun) {
+                    throw new Error(`missing callback function for id ${id}`);
+                }
+
+                return fun.apply(undefined, args);
+            }
+        },
+
+        sandbox,
+        callbackMap: {}
+    };
+
+    return box;
+};
+
 let detect = (call) => {
     // detect connection
     call.detect = (tryTimes = 10) => {
@@ -70,62 +125,50 @@ let detect = (call) => {
     };
 };
 
-let reqHandler = (sandbox) => {
-    let box = {
-        sandbox,
-        systembox: {
-            detect: () => true
-        }
-    };
-
-    // reqData = {id, source, time}
-    return (reqData, send) => {
-        let sendRes = sender('response', send);
-
-        let sendData = (data) => {
-            sendRes(data);
-            return data;
-        };
-
-        let ret = dealReq(reqData, box);
-
-        if (isPromise(ret.data)) {
-            return ret.data.then((inData) => sendData({
-                id: ret.id,
-                data: inData
-            })).catch((err = '') => sendData({
-                id: ret.id,
-                error: err.toString()
-            }));
-        } else {
-            return sendData(ret);
-        }
+let packReq = (name, args, type, box) => {
+    return {
+        type,
+        name,
+        args: map(args || [], (arg) => isFunction(arg) ? {
+            type: 'function',
+            arg: box.systembox.addCallback(arg)
+        } : {
+            type: 'jsonItem',
+            arg
+        })
     };
 };
 
-let dealReq = (reqData, {
-    sandbox, systembox
-}) => {
-    let map = null;
-    let type = reqData.source.type;
-    if (type === 'public') {
-        map = sandbox;
-    } else if (type === 'system') {
-        map = systembox;
-    } else {
-        let err = new Error(`missing sandbox for ${type}`);
-        return {
-            error: {
-                msg: err.toString(),
-                stack: err.stack
-            },
-            id: reqData.id
-        };
-    }
-
+let unPackReq = (source, call) => {
     // process args
+    source.args = map(source.args, ({
+        type, arg
+    }) => type === 'function' ? (...fargs) => call('callback', [arg, fargs], 'system') : arg);
 
-    return callFunction(map, reqData);
+    return source;
+};
+
+let dealReq = (source, box, call) => {
+    let {
+        type, name, args
+    } = unPackReq(source, call);
+    let sbox = getSBox(box, type);
+    if (sbox) {
+        return callFunction(sbox, name, args);
+    } else {
+        return new Error(`missing sandbox for ${type}`);
+    }
+};
+
+let getSBox = ({
+    sandbox, systembox
+}, type) => {
+    if (type === 'public') {
+        return sandbox;
+    } else if (type === 'system') {
+        return systembox;
+    }
+    return false;
 };
 
 module.exports = {

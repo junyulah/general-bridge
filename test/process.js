@@ -55,4 +55,15 @@ describe('process', () => {
             assert.equal(ret, true);
         });
     });
+
+    it('detect', () => {
+        let child = fork(path.join(__dirname, './fixture/test.js'));
+
+        let call = parent(child);
+
+        return call('testCallback', [(a, b) => a * b, 3, 4]).then(ret => {
+            assert.equal(ret, 12);
+        });
+    });
+
 });
