@@ -4,6 +4,8 @@ let {
     child
 } = require('../../apply/process');
 
+let handler = null;
+
 let call = child({
     add: (a, b) => a + b,
 
@@ -14,6 +16,11 @@ let call = child({
     },
 
     testCallback: (fun, a, b) => {
+        handler = fun;
         return fun(a, b);
+    },
+
+    callHandler: (a, b) => {
+        return handler(a, b);
     }
 });

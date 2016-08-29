@@ -7,7 +7,7 @@ let {
 let apply = (fun, args) => {
     try {
         return fun.apply(undefined, args);
-    } catch (err) {
+    } catch(err) {
         return err;
     }
 };

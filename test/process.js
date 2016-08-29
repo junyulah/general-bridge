@@ -39,7 +39,7 @@ describe('process', () => {
         });
 
         call('detect', null, 'miss').catch(err => {
-            assert.equal(err.msg, 'Error: missing sandbox for miss');
+            assert.equal(err.toString(), 'Error: missing sandbox for miss');
             done();
         });
     });
@@ -63,6 +63,29 @@ describe('process', () => {
 
         return call('testCallback', [(a, b) => a * b, 3, 4]).then(ret => {
             assert.equal(ret, 12);
+            return call('callHandler', [2, 5]).then(v => {
+                assert.equal(v, 10);
+            });
+        });
+    });
+
+    it('callback2', () => {
+        let child = fork(path.join(__dirname, './fixture/test.js'));
+
+        let call = parent(child);
+
+        let handler = (a, b) => a * b;
+
+        handler.onlyInCall = true;
+
+        return call('testCallback', [handler, 3, 4]).then(ret => {
+            assert.equal(ret, 12);
+
+            return call('callHandler', [2, 5]).then(v => {
+                assert.equal(v, 10);
+            }).catch(err => {
+                assert.equal(err.toString().indexOf('missing callback function for id') !== -1, true);
+            });
         });
     });
 });
