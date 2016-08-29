@@ -39,7 +39,14 @@ let pc = funType((listen, send, sandbox) => {
 
     listen = wrapListen(listen, send);
 
-    let listenHandle = listenHandler(reqHandler, consume);
+    let listenHandle = listenHandler(reqHandler, (ret) => {
+        if (ret.error) {
+            let err = new Error(ret.error.msg);
+            err.stack = ret.error.stack;
+            ret.error = err;
+        }
+        return consume(ret);
+    });
 
     // data = {id, source, time}
     let sendReq = sender('request', send);
