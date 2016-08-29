@@ -53,13 +53,24 @@ let pc = funType((listen, send, sandbox) => {
 
     let watch = listen(listenHandle);
 
+    let catchSendReq = (data) => {
+        try {
+            watch(data, sendReq(data));
+        } catch (err) {
+            consume({
+                id: data.id,
+                error: err
+            });
+        }
+    };
+
     let call = funType((name, args = [], type = 'public') => {
         // data = {id, source, time}
         let {
             data, result
         } = produce(packReq(name, args, type, box));
 
-        watch(data, sendReq(data));
+        catchSendReq(data);
 
         let clearCallback = () => forEach(args, (arg) => {
             if (isFunction(arg) && arg.onlyInCall) {

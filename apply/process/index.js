@@ -4,21 +4,19 @@ let {
     pc
 } = require('../..');
 
-let child = (sandbox = {}) => {
+let remoteCall = (p, sandbox = {}) => {
     return pc((handler, send) => {
-        process.on('message', (data) => {
+        p.on('message', (data) => {
             handler(data, send);
         });
-    }, (msg) => process.send(msg), sandbox);
+    }, (msg) => p.send(msg), sandbox);
 };
 
-let parent = (child, sandbox = {}) => {
-    return pc((handler, send) => {
-        child.on('message', (data) => {
-            handler(data, send);
-        });
-    }, (msg) => child.send(msg), sandbox);
+let child = (sandbox) => {
+    return remoteCall(process, sandbox);
 };
+
+let parent = remoteCall;
 
 module.exports = {
     child,

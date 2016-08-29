@@ -25,4 +25,18 @@ describe('module', () => {
             })
         ]);
     });
+
+    it('missing', (done) => {
+        let {
+            moduleCaller
+        } = Module();
+
+        let call = moduleCaller('math');
+
+        call('add', [1, 2]).catch((err) => {
+            assert.equal(err.toString(), 'Error: do not exist module math');
+            done();
+        });
+    });
+
 });

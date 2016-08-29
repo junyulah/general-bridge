@@ -1,35 +1,37 @@
 {
-    "name": "general-bridge",
-    "version": "0.0.1",
-    "description": "general bridge library",
-    "main": "index.js",
-    "scripts": {
-        "test": "mocha test/*.js"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/LoveKino/general-bridge.git"
-    },
-    "keywords": [
-        "bridge",
-        "communication",
-        "rpc"
-    ],
-    "author": "ddchen",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/LoveKino/general-bridge/issues"
-    },
-    "homepage": "https://github.com/LoveKino/general-bridge#readme",
-    "devDependencies": {
-        "cl-requestor": "0.0.3",
-        "mocha": "^3.0.2"
-    },
-    "link_dependencies": {
-        "consume-queue": "~0.0.1",
-        "basetype": "~0.0.1",
-        "jsenhance": "~0.0.1",
-        "bolzano": "~0.0.1",
-        "idgener": "~0.0.1"
-    }
+  "name": "general-bridge",
+  "version": "0.0.1",
+  "description": "general bridge library",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/*.js",
+    "cover": "istanbul cover _mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LoveKino/general-bridge.git"
+  },
+  "keywords": [
+    "bridge",
+    "communication",
+    "rpc"
+  ],
+  "author": "ddchen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LoveKino/general-bridge/issues"
+  },
+  "homepage": "https://github.com/LoveKino/general-bridge#readme",
+  "devDependencies": {
+    "cl-requestor": "0.0.3",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.0.2"
+  },
+  "link_dependencies": {
+    "consume-queue": "~0.0.1",
+    "basetype": "~0.0.1",
+    "jsenhance": "~0.0.1",
+    "bolzano": "~0.0.1",
+    "idgener": "~0.0.1"
+  }
 }
