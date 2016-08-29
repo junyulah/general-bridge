@@ -65,5 +65,4 @@ describe('process', () => {
             assert.equal(ret, 12);
         });
     });
-
 });

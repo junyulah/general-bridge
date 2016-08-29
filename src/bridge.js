@@ -1,5 +1,7 @@
 'use strict';
 
+// TODO support high order function
+
 let {
     likeArray, funType, isFalsy, or, isFunction, isString, isObject
 } = require('basetype');
@@ -15,22 +17,6 @@ let idgener = require('idgener');
 let {
     map
 } = require('bolzano');
-
-let listenHandler = (reqHandle, resHandle) => ({
-    type, data
-}, send) => {
-    if (type === 'response') {
-        return resHandle(data, send);
-    } else if (type === 'request') {
-        return reqHandle(data, send);
-    }
-};
-
-let sender = (type, send) => (data) => {
-    return send({
-        type, data
-    });
-};
 
 let pc = funType((listen, send, sandbox) => {
     // data = {id, error, data}
@@ -48,17 +34,7 @@ let pc = funType((listen, send, sandbox) => {
 
         let ret = dealReq(source, box, call);
 
-        return Promise.resolve(ret).then((ret) => {
-            sendRes({
-                data: (ret instanceof Error) ? null : ret,
-                error: (ret instanceof Error) ? {
-                    msg: ret.toString(),
-                    stack: ret.stack
-                } : null,
-                id
-            });
-            return ret;
-        });
+        return packRes(ret, id).then(sendRes).then(() => ret);
     };
 
     listen = wrapListen(listen, send);
@@ -87,19 +63,37 @@ let pc = funType((listen, send, sandbox) => {
     return call;
 }, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
 
+let listenHandler = (reqHandle, resHandle) => ({
+    type, data
+}, send) => {
+    if (type === 'response') {
+        return resHandle(data, send);
+    } else if (type === 'request') {
+        return reqHandle(data, send);
+    }
+};
+
+let sender = (type, send) => (data) => {
+    return send({
+        type, data
+    });
+};
+
 let getBox = (sandbox) => {
-    let box = {
+    let callbackMap = {};
+
+    return {
         systembox: {
             detect: () => true,
 
             addCallback: (callback) => {
                 let id = idgener();
-                box.callbackMap[id] = callback;
+                callbackMap[id] = callback;
                 return id;
             },
 
             callback: (id, args) => {
-                let fun = box.callbackMap[id];
+                let fun = callbackMap[id];
                 if (!fun) {
                     throw new Error(`missing callback function for id ${id}`);
                 }
@@ -108,11 +102,8 @@ let getBox = (sandbox) => {
             }
         },
 
-        sandbox,
-        callbackMap: {}
+        sandbox
     };
-
-    return box;
 };
 
 let detect = (call) => {
@@ -169,6 +160,19 @@ let getSBox = ({
         return systembox;
     }
     return false;
+};
+
+let packRes = (ret, id) => {
+    return Promise.resolve(ret).then((ret) => {
+        return {
+            data: (ret instanceof Error) ? null : ret,
+            error: (ret instanceof Error) ? {
+                msg: ret.toString(),
+                stack: ret.stack
+            } : null,
+            id
+        };
+    });
 };
 
 module.exports = {
