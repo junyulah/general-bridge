@@ -27,11 +27,11 @@
         "istanbul": "^0.4.5",
         "mocha": "^3.0.2"
     },
-    "link_dependencies": {
-        "consume-queue": "~0.0.1",
-        "basetype": "~0.0.1",
-        "jsenhance": "~0.0.1",
-        "bolzano": "~0.0.1",
-        "idgener": "~0.0.1"
+    "dependencies": {
+        "basetype": "^0.1.0",
+        "bolzano": "0.0.1",
+        "consume-queue": "0.0.1",
+        "idgener": "0.0.1",
+        "jsenhance": "0.0.1"
     }
 }
