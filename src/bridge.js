@@ -3,14 +3,12 @@
 // TODO support high order function
 
 let {
-    likeArray, funType, isFalsy, or, isFunction, isString, isObject
+    likeArray, funType, isFalsy, or, isFunction, isString, isObject, isPromise
 } = require('basetype');
 
 let messageQueue = require('consume-queue');
 
 let callFunction = require('./callFunction');
-
-let wrapListen = require('./wrapListen');
 
 let idgener = require('idgener');
 
@@ -18,6 +16,11 @@ let {
     map, forEach
 } = require('bolzano');
 
+/**
+ * @param listen
+ * @param send
+ * @param sandbox provide interfaces
+ */
 let pc = funType((listen, send, sandbox) => {
     // data = {id, error, data}
     let {
@@ -29,33 +32,42 @@ let pc = funType((listen, send, sandbox) => {
     // reqData = {id, source, time}
     let reqHandler = ({
         id, source
-    }, send) => {
-        let sendRes = sender('response', send);
+    }, sendData = send) => {
+        let sendRes = sender('response', sendData);
 
         let ret = dealReq(source, box, call);
 
         return packRes(ret, id).then(sendRes).then(() => ret);
     };
 
-    listen = wrapListen(listen, send);
-
-    let listenHandle = listenHandler(reqHandler, (ret) => {
-        if (ret.error) {
-            let err = new Error(ret.error.msg);
-            err.stack = ret.error.stack;
-            ret.error = err;
-        }
-        return consume(ret);
-    });
-
     // data = {id, source, time}
     let sendReq = sender('request', send);
 
-    let watch = listen(listenHandle);
+    let listenHandle = ({
+        type, data
+    }, send) => {
+        if (type === 'response') {
+            if (data.error) {
+                let err = new Error(data.error.msg);
+                err.stack = data.error.stack;
+                data.error = err;
+            }
+            return consume(data);
+        } else if (type === 'request') {
+            return reqHandler(data, send);
+        }
+    };
+
+    if (listen) {
+        listen(listenHandle);
+    }
 
     let catchSendReq = (data) => {
         try {
-            watch(data, sendReq(data));
+            let sendRet = sendReq(data);
+            if (!listen) {
+                defCall(listenHandle, data, sendRet);
+            }
         } catch (err) {
             consume({
                 id: data.id,
@@ -88,16 +100,6 @@ let pc = funType((listen, send, sandbox) => {
 
     return call;
 }, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
-
-let listenHandler = (reqHandle, resHandle) => ({
-    type, data
-}, send) => {
-    if (type === 'response') {
-        return resHandle(data, send);
-    } else if (type === 'request') {
-        return reqHandle(data, send);
-    }
-};
 
 let sender = (type, send) => (data) => {
     return send({
@@ -224,6 +226,16 @@ let getErrorMsg = (err) => {
     let str = err.toString();
     let type = str.split(':')[0];
     return str.substring(type.length + 1).trim();
+};
+
+let defCall = (handle, data, ret) => {
+    if (!isPromise(ret)) {
+        throw new Error(`there is no listener and response of sending is not a promise. response is ${ret}`);
+    }
+    ret.then(handle).catch(err => handle({
+        error: err,
+        id: data.id
+    }));
 };
 
 module.exports = {
