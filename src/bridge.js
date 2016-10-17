@@ -10,6 +10,8 @@ let messageQueue = require('consume-queue');
 
 let callFunction = require('./callFunction');
 
+let detect = require('./detect');
+
 let idgener = require('idgener');
 
 let {
@@ -17,10 +19,43 @@ let {
 } = require('bolzano');
 
 /**
- * @param listen
+ * @param listen ((data, send) => ()) => ()
+ *
+ * when data.type is request
+ *
+ * data = {
+ *   "type": "request",
+ *   "data": {
+ *       "id": "1476697966359-5-0.9188467286922068",
+ *       "source": {
+ *           "type": "public",
+ *           "name": "add",
+ *           "args": [{
+ *               "type": "jsonItem",
+ *               "arg": 1
+ *           }, {
+ *               "type": "jsonItem",
+ *               "arg": 2
+ *           }]
+ *       },
+ *       "time": 1476697966359
+ *   }
+ * }
+ *
+ * when data.type is response
+ *
+ * data = {
+ *   "type": "response",
+ *   "data": {
+ *       "data": 3,
+ *       "id": "1476697966359-5-0.9188467286922068"
+ *   }
+ * }
+ *
  * @param send
- * @param sandbox provide interfaces
+ * @param sandbox provides interfaces
  */
+
 let pc = funType((listen, send, sandbox) => {
     // data = {id, error, data}
     let {
@@ -136,24 +171,6 @@ let getBox = (sandbox) => {
         },
 
         sandbox
-    };
-};
-
-let detect = (call) => {
-    let tryCall = () => {
-        return Promise.race([
-            new Promise((resolve, reject) => {
-                setTimeout(reject, 1000);
-            }), call('detect', null, 'system')
-        ]);
-    };
-    // detect connection
-    call.detect = (tryTimes = 10) => {
-        if (tryTimes < 0) return Promise.resolve(false);
-
-        return tryCall().catch(() => {
-            return call.detect(--tryTimes);
-        });
     };
 };
 

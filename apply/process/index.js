@@ -7,6 +7,7 @@ let {
 let remoteCall = (p, sandbox = {}) => {
     return pc((handler, send) => {
         p.on('message', (data) => {
+            console.log(JSON.stringify(data));
             handler(data, send);
         });
     }, (msg) => p.send(msg), sandbox);
