@@ -1,6 +1,6 @@
 {
     "name": "general-bridge",
-    "version": "0.0.1",
+    "version": "0.0.3",
     "description": "general bridge library",
     "main": "index.js",
     "scripts": {

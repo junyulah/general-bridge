@@ -10,9 +10,9 @@ let messageQueue = require('consume-queue');
 
 let callFunction = require('./callFunction');
 
-let detect = require('./detect');
+let expandBox = require('./expandBox');
 
-let idgener = require('idgener');
+let detect = require('./detect');
 
 let {
     map, forEach
@@ -52,6 +52,18 @@ let {
  *   }
  * }
  *
+ * data = {
+ *    type: 'request',
+ *    data:{
+ *       id: '1476888114830-13-0.31262883761096827',
+ *       source: {
+ *          type: 'public',
+ *          name: 'testCallback',
+ *          args: [Object]
+ *       },
+ *       time: 1476888114830
+ *    }
+ * }
  * @param send
  * @param sandbox provides interfaces
  */
@@ -62,7 +74,7 @@ let pc = funType((listen, send, sandbox) => {
         consume, produce
     } = messageQueue();
 
-    let box = getBox(sandbox);
+    let box = expandBox(sandbox);
 
     // reqData = {id, source, time}
     let reqHandler = ({
@@ -140,38 +152,6 @@ let sender = (type, send) => (data) => {
     return send({
         type, data
     });
-};
-
-let getBox = (sandbox) => {
-    let callbackMap = {};
-
-    return {
-        systembox: {
-            detect: () => true,
-
-            addCallback: funType((callback) => {
-                let id = idgener();
-                callback.callId = id;
-                callbackMap[id] = callback;
-                return id;
-            }, [isFunction]),
-
-            callback: (id, args) => {
-                let fun = callbackMap[id];
-                if (!fun) {
-                    throw new Error(`missing callback function for id ${id}`);
-                }
-
-                return fun.apply(undefined, args);
-            },
-
-            removeCallback: (callback) => {
-                delete callbackMap[callback.callId];
-            }
-        },
-
-        sandbox
-    };
 };
 
 let packReq = (name, args, type, box) => {
