@@ -22,7 +22,8 @@ describe('http', () => {
         });
 
         let mid = midder({
-            add: (a, b) => a + b
+            add: (a, b) => a + b,
+            returnUndefined: () => undefined
         });
         let server = http.createServer((req, res) => {
             if (req.url === '/api') {
@@ -38,7 +39,11 @@ describe('http', () => {
         });
         server.listen(8088, () => {
             call('add', [5, 2]).then(ret => {
-                done(assert.equal(ret, 7));
+                assert.equal(ret, 7);
+                return call('returnUndefined');
+            }).then((ret) => {
+                assert.equal(ret === undefined, true);
+                done();
             });
         });
     });
