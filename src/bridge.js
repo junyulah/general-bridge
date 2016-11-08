@@ -6,16 +6,16 @@ let {
     likeArray, funType, isFalsy, or, isFunction, isString, isObject, isPromise
 } = require('basetype');
 
-let messageQueue = require('consume-queue');
-
-let callFunction = require('./callFunction');
-
 let expandBox = require('./expandBox');
 
 let detect = require('./detect');
 
+let Packer = require('./packer');
+
+let dealReq = require('./dealRequest');
+
 let {
-    map, forEach
+    forEach
 } = require('bolzano');
 
 /**
@@ -54,7 +54,7 @@ let {
  *
  * data = {
  *    type: 'request',
- *    data:{
+ *    data: {
  *       id: '1476888114830-13-0.31262883761096827',
  *       source: {
  *          type: 'public',
@@ -71,37 +71,25 @@ let {
 let pc = funType((listen, send, sandbox) => {
     // data = {id, error, data}
     let {
-        consume, produce
-    } = messageQueue();
+        packReq, packRes, unPackRes, unPackReq
+    } = Packer();
 
     let box = expandBox(sandbox);
 
-    // reqData = {id, source, time}
-    let reqHandler = ({
-        id, source
-    }, sendData = send) => {
-        let sendRes = sender('response', sendData);
-
-        let ret = dealReq(source, box, call);
-
-        return packRes(ret, id).then(sendRes).then(() => ret);
-    };
-
     // data = {id, source, time}
-    let sendReq = sender('request', send);
-
-    let listenHandle = ({
-        type, data
-    }, send) => {
-        if (type === 'response') {
-            if (data.error) {
-                let err = new Error(data.error.msg);
-                err.stack = data.error.stack;
-                data.error = err;
-            }
-            return consume(data);
-        } else if (type === 'request') {
-            return reqHandler(data, send);
+    let listenHandle = (data, sendData) => {
+        switch (data.type) {
+            case 'response':
+                return unPackRes(data);
+            case 'request':
+                return packRes(
+                    dealReq(
+                        unPackReq(data, call),
+                        box),
+                    data
+                ).then(sendData || send);
+            default:
+                break;
         }
     };
 
@@ -109,17 +97,14 @@ let pc = funType((listen, send, sandbox) => {
         listen(listenHandle);
     }
 
-    let catchSendReq = (data) => {
+    let catchSendReq = (requestObj) => {
         try {
-            let sendRet = sendReq(data);
+            let sendRet = send(requestObj);
             if (!listen) {
-                defCall(listenHandle, data, sendRet);
+                defCall(listenHandle, requestObj.data, sendRet);
             }
         } catch (err) {
-            consume({
-                id: data.id,
-                error: err
-            });
+            packRes(err, requestObj).then(unPackRes);
         }
     };
 
@@ -127,7 +112,7 @@ let pc = funType((listen, send, sandbox) => {
         // data = {id, source, time}
         let {
             data, result
-        } = produce(packReq(name, args, type, box));
+        } = packReq(name, args, type, box);
 
         catchSendReq(data);
 
@@ -147,83 +132,6 @@ let pc = funType((listen, send, sandbox) => {
 
     return call;
 }, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
-
-let sender = (type, send) => (data) => {
-    return send({
-        type, data
-    });
-};
-
-let packReq = (name, args, type, box) => {
-    return {
-        type,
-        name,
-        args: map(args || [], (arg) => isFunction(arg) ? {
-            type: 'function',
-            arg: box.systembox.addCallback(arg)
-        } : {
-            type: 'jsonItem',
-            arg
-        })
-    };
-};
-
-let unPackReq = (source, call) => {
-    // process args
-    source.args = map(source.args, ({
-        type, arg
-    }) => type === 'function' ? (...fargs) => call('callback', [arg, fargs], 'system') : arg);
-
-    return source;
-};
-
-let dealReq = (source, box, call) => {
-    let {
-        type, name, args
-    } = unPackReq(source, call);
-    let sbox = getSBox(box, type);
-    if (sbox) {
-        return callFunction(sbox, name, args);
-    } else {
-        return new Error(`missing sandbox for ${type}`);
-    }
-};
-
-let getSBox = ({
-    sandbox, systembox
-}, type) => {
-    if (type === 'public') {
-        return sandbox;
-    } else if (type === 'system') {
-        return systembox;
-    }
-    return false;
-};
-
-let packRes = (ret, id) => {
-    return Promise.resolve(ret).then((ret) =>
-        (ret instanceof Error) ? getErrorRes(ret, id) : {
-            data: ret,
-            id
-        }
-    ).catch(err => getErrorRes(err, id));
-};
-
-let getErrorRes = (err, id) => {
-    return {
-        error: {
-            msg: getErrorMsg(err),
-            stack: err.stack
-        },
-        id
-    };
-};
-
-let getErrorMsg = (err) => {
-    let str = err.toString();
-    let type = str.split(':')[0];
-    return str.substring(type.length + 1).trim();
-};
 
 let defCall = (handle, data, ret) => {
     if (!isPromise(ret)) {
