@@ -1,6 +1,9 @@
 'use strict';
 
 let callFunction = require('./callFunction');
+let {
+    map
+} = require('bolzano');
 
 /**
  * deal request data
@@ -11,8 +14,13 @@ let callFunction = require('./callFunction');
  */
 let dealReq = ({
     type, name, args
-}, box) => {
+}, box, call) => {
     let sbox = getSBox(box, type);
+    // process args
+    args = map(args, ({
+        type, arg
+    }) => type === 'function' ? (...fargs) => call('callback', [arg, fargs], 'system') : arg);
+
     if (sbox) {
         return callFunction(sbox, name, args);
     } else {

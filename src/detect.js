@@ -16,4 +16,6 @@ module.exports = (call) => {
             return call.detect(--tryTimes);
         });
     };
+
+    return call;
 };

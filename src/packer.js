@@ -12,7 +12,8 @@ let getErrorRes = (err, id) => {
     return {
         error: {
             msg: getErrorMsg(err),
-            stack: err.stack
+            stack: err.stack,
+            data: err.data // carry some data
         },
         id
     };
@@ -24,6 +25,26 @@ let getErrorMsg = (err) => {
     return str.substring(type.length + 1).trim();
 };
 
+/**
+ * data = {
+ *   "type": "request",
+ *   "data": {
+ *       "id": "1476697966359-5-0.9188467286922068",
+ *       "source": {
+ *           "type": "public",
+ *           "name": "add",
+ *           "args": [{
+ *               "type": "jsonItem",
+ *               "arg": 1
+ *           }, {
+ *               "type": "jsonItem",
+ *               "arg": 2
+ *           }]
+ *       },
+ *       "time": 1476697966359
+ *   }
+ * }
+ */
 module.exports = () => {
     let {
         consume, produce
@@ -67,21 +88,18 @@ module.exports = () => {
      * @param source
      * @param call
      */
-    let unPackReq = (requestObj, call) => {
-        let source = requestObj.data.source;
-        // process args
-        source.args = map(source.args, ({
-            type, arg
-        }) => type === 'function' ? (...fargs) => call('callback', [arg, fargs], 'system') : arg);
-
-        return source;
+    let unPackReq = (requestObj) => {
+        return requestObj.data.source;
     };
 
     let unPackRes = (responseObj) => {
         let data = responseObj.data;
         if (data.error) {
             let err = new Error(data.error.msg);
+            // recover stack
             err.stack = data.error.stack;
+            // recover data
+            err.data = data.error.data;
             data.error = err;
         }
         return consume(data);
@@ -106,7 +124,6 @@ module.exports = () => {
             };
         });
     };
-
 
     return {
         packReq,

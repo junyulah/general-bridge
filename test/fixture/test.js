@@ -22,5 +22,21 @@ let call = child({
 
     callHandler: (a, b) => {
         return handler(a, b);
+    },
+
+    error: () => {
+        let err = new Error('err');
+        err.data = {
+            a: 1
+        };
+        throw err;
+    },
+
+    rejectError: () => {
+        let err = new Error('err');
+        err.data = {
+            a: 1
+        };
+        return Promise.reject(err);
     }
 });

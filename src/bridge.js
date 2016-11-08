@@ -68,8 +68,25 @@ let {
  * @param sandbox provides interfaces
  */
 
-let pc = funType((listen, send, sandbox) => {
+let pc = funType((listen, originSend, sandbox) => {
+    let sender = (originSend) => (requestObj) => {
+        try {
+            let sendRet = originSend(requestObj);
+            if (!listen) {
+                if (!isPromise(sendRet)) {
+                    throw new Error(`there is no listener and response of sending is not a promise. response is ${sendRet}`);
+                }
+                // listen for response data
+                sendRet.then(listenHandle).catch(err => listenHandle(packRes(err, requestObj)));
+            }
+        } catch (err) {
+            return packRes(err, requestObj).then(unPackRes);
+        }
+    };
+
     // data = {id, error, data}
+    let send = sender(originSend);
+
     let {
         packReq, packRes, unPackRes, unPackReq
     } = Packer();
@@ -78,16 +95,22 @@ let pc = funType((listen, send, sandbox) => {
 
     // data = {id, source, time}
     let listenHandle = (data, sendData) => {
+        let sendFun = send;
+        if (sendData) {
+            sendFun = sender(sendData);
+        }
         switch (data.type) {
             case 'response':
                 return unPackRes(data);
             case 'request':
                 return packRes(
                     dealReq(
-                        unPackReq(data, call),
-                        box),
+                        unPackReq(data),
+                        box,
+                        call
+                    ),
                     data
-                ).then(sendData || send);
+                ).then(sendFun);
             default:
                 break;
         }
@@ -97,24 +120,13 @@ let pc = funType((listen, send, sandbox) => {
         listen(listenHandle);
     }
 
-    let catchSendReq = (requestObj) => {
-        try {
-            let sendRet = send(requestObj);
-            if (!listen) {
-                defCall(listenHandle, requestObj.data, sendRet);
-            }
-        } catch (err) {
-            packRes(err, requestObj).then(unPackRes);
-        }
-    };
-
-    let call = funType((name, args = [], type = 'public') => {
+    let call = detect(funType((name, args = [], type = 'public') => {
         // data = {id, source, time}
         let {
             data, result
         } = packReq(name, args, type, box);
 
-        catchSendReq(data);
+        send(data);
 
         let clearCallback = () => forEach(args, (arg) => {
             if (isFunction(arg) && arg.onlyInCall) {
@@ -125,23 +137,13 @@ let pc = funType((listen, send, sandbox) => {
         result.then(clearCallback).catch(clearCallback);
 
         return result;
-    }, [isString, or(likeArray, isFalsy), or(isString, isFalsy)]);
+    }, [isString, or(likeArray, isFalsy), or(isString, isFalsy)]));
 
     // detect connection
     detect(call);
 
     return call;
 }, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
-
-let defCall = (handle, data, ret) => {
-    if (!isPromise(ret)) {
-        throw new Error(`there is no listener and response of sending is not a promise. response is ${ret}`);
-    }
-    ret.then(handle).catch(err => handle({
-        error: err,
-        id: data.id
-    }));
-};
 
 module.exports = {
     pc

@@ -44,6 +44,28 @@ describe('process', () => {
         });
     });
 
+    it('error carry some data', (done) => {
+        let child = fork(path.join(__dirname, './fixture/test.js'));
+
+        let call = parent(child, {});
+
+        call('error', null).catch(err => {
+            assert.equal(err.data.a, 1);
+            done();
+        });
+    });
+
+    it('reject error carry some data', (done) => {
+        let child = fork(path.join(__dirname, './fixture/test.js'));
+
+        let call = parent(child, {});
+
+        call('rejectError', null).catch(err => {
+            assert.equal(err.data.a, 1);
+            done();
+        });
+    });
+
     it('detect', () => {
         let child = fork(path.join(__dirname, './fixture/test.js'));
 
