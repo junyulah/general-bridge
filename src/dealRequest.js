@@ -8,11 +8,17 @@ let {
 /**
  * deal request data
  *
- * @param source
+ * @param type
+ *   chose different box
+ * @param name
+ *   function path
+ * @param args
+ *   params for function
  * @param box
+ *   sandbox
  * @param call
  */
-let dealReq = ({
+module.exports = ({
     type, name, args
 }, box, call) => {
     let sbox = getSBox(box, type);
@@ -38,5 +44,3 @@ let getSBox = ({
     }
     return false;
 };
-
-module.exports = dealReq;

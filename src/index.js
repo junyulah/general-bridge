@@ -1,11 +1,14 @@
 'use strict';
 
-let {pc} = require('./bridge');
+let pc = require('./bridge');
 
-let {stringify, parseJSON} = require('./serialize');
+let lam = require('./lam');
+
+let {stringify, parseJSON} = require('./util/serialize');
 
 module.exports = {
     stringify,
     parseJSON,
-    pc
+    pc,
+    lam
 };

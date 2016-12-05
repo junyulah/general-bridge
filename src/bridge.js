@@ -64,11 +64,14 @@ let {
  *       time: 1476888114830
  *    }
  * }
- * @param send
- * @param sandbox provides interfaces
+ *
+ * @param listen
+ * @param originSend
+ * @param sandbox Object
+ *      provides interfaces
  */
 
-let pc = funType((listen, originSend, sandbox) => {
+module.exports = funType((listen, originSend, sandbox) => {
     let sender = (originSend) => (requestObj) => {
         try {
             let sendRet = originSend(requestObj);
@@ -144,7 +147,3 @@ let pc = funType((listen, originSend, sandbox) => {
 
     return call;
 }, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
-
-module.exports = {
-    pc
-};

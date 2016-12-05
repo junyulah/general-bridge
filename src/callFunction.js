@@ -12,6 +12,15 @@ let apply = (fun, args) => {
     }
 };
 
+/**
+ * execute function
+ *
+ * TODO support lambda
+ *
+ * @param map Obejct
+ * @param name String
+ * @param args Array
+ */
 module.exports = (map, name, args) => {
     let fun = get(map, name);
     if (!fun && typeof fun !== 'function') {

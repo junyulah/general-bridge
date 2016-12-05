@@ -20,6 +20,9 @@ let parseJSON = (str) => {
     }
 };
 
+/**
+ * serialize json
+ */
 module.exports = {
     parseJSON,
     stringify
