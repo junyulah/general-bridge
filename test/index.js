@@ -1,7 +1,7 @@
 'use strict';
 
 let {
-    pc, lam
+    pc
 } = require('..');
 
 let assert = require('assert');
@@ -27,21 +27,31 @@ describe('index', () => {
         let handler = null;
 
         let {
-            run, r, v, method
-        } = lam((handle) => {
+            runLam, lamDsl
+        } = pc((handle) => {
             handler = handle;
         }, (data) => {
             handler(data);
         }, {
-            add: (a, b) => a + b
+            add: (a, b) => a + b,
+            multiple: (a, b) => a * b
         });
 
-        let add = method('add');
+        let {
+            r, v
+        } = lamDsl;
 
-        return run(
-            r('x', add(v('x'), 1))(4)
+        let add = lamDsl.require('add');
+        let multiple = lamDsl.require('multiple');
+
+        return runLam(
+            r('x',
+                multiple(
+                    add(v('x'), 1), 4
+                )
+            )(4)
         ).then((ret) => {
-            assert.equal(ret, 5);
+            assert.equal(ret, 20);
         });
     });
 });

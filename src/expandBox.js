@@ -6,12 +6,18 @@ let {
 
 let idgener = require('idgener');
 
+let {
+    interpreter
+} = require('leta');
+
 /**
  * expand box
- *  add system box
+ *      add system box
  */
 module.exports = (sandbox) => {
     let callbackMap = {};
+
+    let interpret = interpreter(sandbox);
 
     return {
         systembox: {
@@ -35,6 +41,10 @@ module.exports = (sandbox) => {
 
             removeCallback: (callback) => {
                 delete callbackMap[callback.callId];
+            },
+
+            lambda: (lambdaJson) => {
+                return interpret(lambdaJson);
             }
         },
 

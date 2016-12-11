@@ -15,6 +15,10 @@ let Packer = require('./packer');
 let dealReq = require('./dealRequest');
 
 let {
+    dsl
+} = require('leta');
+
+let {
     forEach
 } = require('bolzano');
 
@@ -144,6 +148,11 @@ module.exports = funType((listen, originSend, sandbox) => {
 
     // detect connection
     detect(call);
+
+    // lambda
+    call.runLam = (lamDsl) => call('lambda', [dsl.getJson(lamDsl)], 'system');
+
+    call.lamDsl = dsl;
 
     return call;
 }, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
