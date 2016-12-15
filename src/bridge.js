@@ -75,6 +75,7 @@ let {
  *      provides interfaces
  */
 
+// TODO support big array for sending or reciving
 module.exports = funType((listen, originSend, sandbox) => {
     let sender = (originSend) => (requestObj) => {
         try {
@@ -101,6 +102,7 @@ module.exports = funType((listen, originSend, sandbox) => {
     let box = expandBox(sandbox);
 
     // data = {id, source, time}
+    // accept data
     let listenHandle = (data, sendData) => {
         let sendFun = send;
         if (sendData) {
