@@ -1,7 +1,5 @@
 'use strict';
 
-// TODO support high order function
-
 let {
     likeArray, funType, isFalsy, or, isFunction, isString, isObject, isPromise
 } = require('basetype');
@@ -21,6 +19,8 @@ let {
 let {
     forEach
 } = require('bolzano');
+
+let observe = require('fun-observer');
 
 /**
  * @param listen ((data, send) => ()) => ()
@@ -70,13 +70,17 @@ let {
  * }
  *
  * @param listen
+ *      listen to the data from other side
  * @param originSend
+ *      send data to the other side
  * @param sandbox Object
  *      provides interfaces
+ *
+ * TODO support on close event
  */
 
-// TODO support big array for sending or reciving
-module.exports = funType((listen, originSend, sandbox) => {
+module.exports = funType((listen, originSend, sandbox, options = {}) => {
+    options.onabort = options.onabort || id;
     let sender = (originSend) => (requestObj) => {
         try {
             let sendRet = originSend(requestObj);
@@ -129,6 +133,12 @@ module.exports = funType((listen, originSend, sandbox) => {
         listen(listenHandle);
     }
 
+    // add detect prop
+    // TODO if connection closed at this time, should throw an specific exception
+    let abortHandler = observe();
+    // wait for abort
+    options.onabort(abortHandler);
+
     let call = detect(funType((name, args = [], type = 'public') => {
         // data = {id, source, time}
         let {
@@ -136,6 +146,20 @@ module.exports = funType((listen, originSend, sandbox) => {
         } = packReq(name, args, type, box);
 
         send(data);
+
+        // detect aborting
+        result = abortHandler.during(result).then(({
+            happened,
+            ret
+        }) => {
+            if (happened) {
+                let err = new Error(`abort happened during calling. Abrot message is ${ret}`);
+                err.type = 'call-abort';
+                throw err;
+            } else {
+                return ret;
+            }
+        });
 
         let clearCallback = () => forEach(args, (arg) => {
             if (isFunction(arg) && arg.onlyInCall) {
@@ -146,15 +170,26 @@ module.exports = funType((listen, originSend, sandbox) => {
         result.then(clearCallback).catch(clearCallback);
 
         return result;
-    }, [isString, or(likeArray, isFalsy), or(isString, isFalsy)]));
+    }, [
+        isString,
+        or(likeArray, isFalsy),
+        or(isString, isFalsy)
+    ]));
 
     // detect connection
     detect(call);
 
-    // lambda
+    // lambda support
     call.runLam = (lamDsl) => call('lambda', [dsl.getJson(lamDsl)], 'system');
 
     call.lamDsl = dsl;
 
     return call;
-}, [or(isFalsy, isFunction), or(isFalsy, isFunction), or(isFalsy, isObject)]);
+}, [
+    or(isFalsy, isFunction),
+    or(isFalsy, isFunction),
+    or(isFalsy, isObject),
+    or(isFalsy, isObject)
+]);
+
+let id = v => v;

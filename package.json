@@ -1,6 +1,6 @@
 {
   "name": "general-bridge",
-  "version": "0.2.1",
+  "version": "0.3.1",
   "description": "general bridge library",
   "main": "index.js",
   "scripts": {
@@ -31,6 +31,7 @@
     "basetype": "^0.1.0",
     "bolzano": "0.0.3",
     "consume-queue": "0.0.1",
+    "fun-observer": "^0.1.0",
     "idgener": "0.0.1",
     "jsenhance": "0.0.2",
     "leta": "^0.1.1"

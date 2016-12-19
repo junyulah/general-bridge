@@ -4,6 +4,10 @@ let {
     child
 } = require('../../apply/process');
 
+let {
+    delay
+} = require('jsenhance');
+
 let handler = null;
 
 let call = child({
@@ -38,5 +42,7 @@ let call = child({
             a: 1
         };
         return Promise.reject(err);
-    }
+    },
+
+    delay
 });

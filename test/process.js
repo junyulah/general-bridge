@@ -12,6 +12,10 @@ let {
     parent
 } = require('../apply/process');
 
+let {
+    delay
+} = require('jsenhance');
+
 describe('process', () => {
     it('base', () => {
         let child = fork(path.join(__dirname, './fixture/test.js'));
@@ -108,6 +112,19 @@ describe('process', () => {
             }).catch(err => {
                 assert.equal(err.toString().indexOf('missing callback function for id') !== -1, true);
             });
+        });
+    });
+
+    it('abort', () => {
+        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let call = parent(child);
+
+        delay(50).then(() => {
+            child.kill('SIGINT');
+        });
+
+        return call('delay', [100]).catch(err => {
+            assert.equal(err.type, 'call-abort');
         });
     });
 });
