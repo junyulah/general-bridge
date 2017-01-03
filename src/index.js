@@ -8,6 +8,8 @@ let {
 
 let mirrorBox = require('./util/mirrorBox');
 
+let mirrorPredicateSet = require('./util/mirrorPredicates');
+
 let callWithAbort = require('./callWithAbort');
 
 module.exports = {
@@ -15,5 +17,6 @@ module.exports = {
     parseJSON,
     pc,
     callWithAbort,
-    mirrorBox
+    mirrorBox,
+    mirrorPredicateSet
 };

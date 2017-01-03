@@ -9,21 +9,22 @@ let {
 } = require('basetype');
 
 /**
- * make a mirror of sandbox for the client, easy to call
+ * mirror the sandbox for lambda
  */
 module.exports = (call, path) => {
     return call('publicBoxMirror', [path], 'system').then((box) => {
-        return mirror(box, path, call);
+        return mirrorPredicateSet(box, path, call.lamDsl);
     });
 };
 
-let mirror = (box, path = '', call) => {
+let mirrorPredicateSet = (box, path, lamDsl) => {
+    let method = lamDsl.require;
+
     if (box === 'f') {
-        return (...args) => call(path, args);
+        return method(path);
     } else if (isObject(box)) {
         return reduce(box, (prev, item, name) => {
-            prev[name] = mirror(item, compact([path, name]).join('.'), call);
-
+            prev[name] = mirrorPredicateSet(item, compact([path, name]).join('.'), lamDsl);
             return prev;
         }, {});
     }

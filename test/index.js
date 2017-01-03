@@ -1,7 +1,7 @@
 'use strict';
 
 let {
-    pc
+    pc, mirrorPredicateSet
 } = require('..');
 
 let assert = require('assert');
@@ -92,6 +92,35 @@ describe('index', () => {
                 return call('publicBoxMirror', ['abcd'], 'system').then((ret) => {
                     assert.deepEqual(ret, null);
                 });
+            });
+        });
+    });
+
+    it('lamabda predicate set mirror', () => {
+        let handler = null;
+
+        let call = pc((handle) => {
+            handler = handle;
+        }, (data) => {
+            handler(data);
+        }, {
+            math: {
+                add: (a, b) => a + b,
+                multiple: (a, b) => a * b
+            },
+            id: v => v
+        });
+        let {
+            runLam
+        } = call;
+
+        return mirrorPredicateSet(call).then(({
+            math: {
+                add, multiple
+            }, id
+        }) => {
+            return runLam(id(add(multiple(2, 3), 1))).then(ret => {
+                assert.deepEqual(ret, 7);
             });
         });
     });
