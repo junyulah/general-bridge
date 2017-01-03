@@ -2,7 +2,11 @@
 
 let pc = require('./bridge');
 
-let {stringify, parseJSON} = require('./util/serialize');
+let {
+    stringify, parseJSON
+} = require('./util/serialize');
+
+let mirrorBox = require('./util/mirrorBox');
 
 let callWithAbort = require('./callWithAbort');
 
@@ -10,5 +14,6 @@ module.exports = {
     stringify,
     parseJSON,
     pc,
-    callWithAbort
+    callWithAbort,
+    mirrorBox
 };

@@ -1,7 +1,7 @@
 'use strict';
 
 let {
-    funType, isFunction
+    funType, isFunction, isObject
 } = require('basetype');
 
 let idgener = require('idgener');
@@ -9,6 +9,10 @@ let idgener = require('idgener');
 let {
     interpreter
 } = require('leta');
+
+let {
+    reduce, get
+} = require('bolzano');
 
 /**
  * expand box
@@ -45,9 +49,26 @@ module.exports = (sandbox) => {
 
             lambda: (lambdaJson) => {
                 return interpret(lambdaJson);
+            },
+
+            publicBoxMirror: (path = '') => {
+                return boxMirror(get(sandbox, path));
             }
         },
 
         sandbox
     };
+};
+
+let boxMirror = (box) => {
+    if (isFunction(box)) {
+        return 'f';
+    } else if (isObject(box)) {
+        return reduce(box, (prev, item, name) => {
+            prev[name] = boxMirror(item);
+            return prev;
+        }, {});
+    } else {
+        return null;
+    }
 };

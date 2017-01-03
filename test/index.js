@@ -54,4 +54,45 @@ describe('index', () => {
             assert.equal(ret, 20);
         });
     });
+
+    it('box mirror', () => {
+        let handler = null;
+
+        let call = pc((handle) => {
+            handler = handle;
+        }, (data) => {
+            handler(data);
+        }, {
+            math: {
+                add: (a, b) => a + b,
+                multiple: (a, b) => a * b
+            },
+            id: (v) => v
+        });
+
+        return call('publicBoxMirror', [], 'system').then(ret => {
+            assert.deepEqual(ret, {
+                math: {
+                    add: 'f',
+                    multiple: 'f'
+                },
+                id: 'f'
+            });
+
+            return call('publicBoxMirror', ['math'], 'system').then((ret) => {
+                assert.deepEqual(ret, {
+                    add: 'f',
+                    multiple: 'f'
+                });
+
+                return call('publicBoxMirror', ['math.add'], 'system').then((ret) => {
+                    assert.deepEqual(ret, 'f');
+                });
+            }).then(() => {
+                return call('publicBoxMirror', ['abcd'], 'system').then((ret) => {
+                    assert.deepEqual(ret, null);
+                });
+            });
+        });
+    });
 });

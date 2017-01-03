@@ -3,6 +3,9 @@
 let {
     reqCaller, midder
 } = require('../apply/http');
+let {
+    mirrorBox
+} = require('..');
 let http = require('http');
 let requestor = require('cl-requestor');
 let httpRequest = requestor('http');
@@ -50,12 +53,34 @@ describe('http', () => {
         return apiServer({
             add: (a, b) => a + b,
             returnUndefined: () => undefined
-        }).then(() => {
+        }).then((server) => {
             return call('add', [5, 2]).then(ret => {
                 assert.equal(ret, 7);
                 return call('returnUndefined');
             }).then((ret) => {
                 assert.equal(ret === undefined, true);
+            }).then(() => {
+                server.close();
+            });
+        });
+    });
+
+    it('mirror box', () => {
+        let call = clientCall();
+
+        return apiServer({
+            math: {
+                add: (a, b) => a + b,
+                multiple: (a, b) => a * b
+            }
+        }).then((server) => {
+            return mirrorBox(call).then((apis) => {
+                return Promise.all([apis.math.add(4, 5), apis.math.multiple(4, 6)]).then(([ret1, ret2]) => {
+                    assert.deepEqual(ret1, 9);
+                    assert.deepEqual(ret2, 24);
+                });
+            }).then(() => {
+                server.close();
             });
         });
     });
