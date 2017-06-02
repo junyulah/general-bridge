@@ -35,6 +35,8 @@ describe('index', () => {
         }, {
             add: (a, b) => a + b,
             multiple: (a, b) => a * b
+        }, {
+            supportLambda: true
         });
 
         let {
@@ -52,6 +54,43 @@ describe('index', () => {
             )(4)
         ).then((ret) => {
             assert.equal(ret, 20);
+        });
+    });
+
+    it('close lambda', (done) => {
+        let handler = null;
+
+        let {
+            runLam, lamDsl
+        } = pc((handle) => {
+            handler = handle;
+        }, (data) => {
+            handler(data);
+        }, {
+            add: (a, b) => a + b,
+            multiple: (a, b) => a * b
+        }, {
+            supportLambda: false
+        });
+
+        let {
+            r, v
+        } = lamDsl;
+
+        let add = lamDsl.require('add');
+        let multiple = lamDsl.require('multiple');
+
+        runLam(
+            r('x',
+                multiple(
+                    add(v('x'), 1), 4
+                )
+            )(4)
+        ).then((ret) => {
+            assert.equal(ret, 20);
+        }).catch(err => {
+            assert(err.toString().indexOf('responser closed lambda support') !== -1);
+            done();
         });
     });
 
@@ -109,6 +148,8 @@ describe('index', () => {
                 multiple: (a, b) => a * b
             },
             id: v => v
+        }, {
+            supportLambda: true
         });
         let {
             runLam
@@ -117,7 +158,8 @@ describe('index', () => {
         return mirrorPredicateSet(call).then(({
             math: {
                 add, multiple
-            }, id
+            },
+            id
         }) => {
             return runLam(id(add(multiple(2, 3), 1))).then(ret => {
                 assert.deepEqual(ret, 7);

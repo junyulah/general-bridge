@@ -10,7 +10,7 @@ let mirrorBox = require('./util/mirrorBox');
 
 let mirrorPredicateSet = require('./util/mirrorPredicates');
 
-let callWithAbort = require('./callWithAbort');
+let callWithAbort = require('./caller/callWithAbort');
 
 module.exports = {
     stringify,
@@ -18,5 +18,6 @@ module.exports = {
     pc,
     callWithAbort,
     mirrorBox,
-    mirrorPredicateSet
+    mirrorPredicateSet,
+    bridge: pc
 };

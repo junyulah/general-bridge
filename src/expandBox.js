@@ -4,7 +4,7 @@ let {
     funType, isFunction, isObject
 } = require('basetype');
 
-let idgener = require('idgener');
+let uuidV4 = require('uuid/v4');
 
 let {
     interpreter
@@ -18,7 +18,9 @@ let {
  * expand box
  *      add system box
  */
-module.exports = (sandbox) => {
+module.exports = (sandbox, {
+    supportLambda
+}) => {
     let callbackMap = {};
 
     let interpret = interpreter(sandbox);
@@ -28,7 +30,7 @@ module.exports = (sandbox) => {
             detect: () => true,
 
             addCallback: funType((callback) => {
-                let id = idgener();
+                let id = uuidV4();
                 callback.callId = id;
                 callbackMap[id] = callback;
                 return id;
@@ -47,7 +49,13 @@ module.exports = (sandbox) => {
                 delete callbackMap[callback.callId];
             },
 
+            /**
+             * support lambda
+             */
             lambda: (lambdaJson) => {
+                if (!supportLambda) {
+                    throw new Error('responser closed lambda support, please try normal calling.');
+                }
                 return interpret(lambdaJson);
             },
 

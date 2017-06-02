@@ -18,10 +18,15 @@ let {
  *   sandbox
  * @param call
  */
-module.exports = ({
+module.exports = (box, packer, call) => (reqData, sendFun) => {
+    return packer.packRes(runBox(packer.unPackReq(reqData), box, call), reqData).then(sendFun);
+};
+
+let runBox = ({
     type, name, args
 }, box, call) => {
     let sbox = getSBox(box, type);
+
     // process args
     args = map(args, ({
         type, arg

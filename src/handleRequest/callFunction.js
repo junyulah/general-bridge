@@ -13,7 +13,7 @@ let apply = (fun, args) => {
 };
 
 /**
- * execute function
+ * execute function from map
  *
  * TODO support lambda
  *

@@ -9,12 +9,12 @@ module.exports = {
         return pc(null, (msg) => request(stringify(msg)).then(parseJSON));
     },
 
-    midder: (sandbox) => {
+    midder: (sandbox, options) => {
         let reqHandler = null;
 
         pc((handler) => {
             reqHandler = handler;
-        }, null, sandbox);
+        }, null, sandbox, options);
 
         return (requestData, res) => {
             requestData = parseJSON(requestData);

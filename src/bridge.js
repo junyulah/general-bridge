@@ -1,26 +1,16 @@
 'use strict';
 
 let {
-    likeArray, funType, isFalsy, or, isFunction, isString, isObject, isPromise
+    funType, isFalsy, or, isFunction, isObject, isPromise
 } = require('basetype');
 
 let expandBox = require('./expandBox');
 
-let detect = require('./detect');
-
 let Packer = require('./packer');
 
-let dealReq = require('./dealRequest');
+let HandleRequest = require('./handleRequest');
 
-let {
-    dsl
-} = require('leta');
-
-let {
-    forEach
-} = require('bolzano');
-
-let observe = require('fun-observer');
+let Caller = require('./caller');
 
 /**
  * @param listen ((data, send) => ()) => ()
@@ -80,7 +70,6 @@ let observe = require('fun-observer');
  */
 
 module.exports = funType((listen, originSend, sandbox, options = {}) => {
-    options.onabort = options.onabort || id;
     let sender = (originSend) => (requestObj) => {
         try {
             let sendRet = originSend(requestObj);
@@ -88,101 +77,39 @@ module.exports = funType((listen, originSend, sandbox, options = {}) => {
                 if (!isPromise(sendRet)) {
                     throw new Error(`there is no listener and response of sending is not a promise. response is ${sendRet}`);
                 }
+
                 // listen for response data
-                sendRet.then(listenHandle).catch(err => listenHandle(packRes(err, requestObj)));
+                sendRet.then(listenHandle).catch(err => listenHandle(packer.packRes(err, requestObj)));
             }
         } catch (err) {
-            return packRes(err, requestObj).then(unPackRes);
+            return packer.packRes(err, requestObj).then(packer.unPackRes);
         }
     };
 
     // data = {id, error, data}
     let send = sender(originSend);
+    let packer = Packer();
+    let box = expandBox(sandbox, options);
+    let call = Caller(packer, box, send, options.onabort || id);
+    let handleRequest = HandleRequest(box, packer, call);
 
-    let {
-        packReq, packRes, unPackRes, unPackReq
-    } = Packer();
-
-    let box = expandBox(sandbox);
-
-    // data = {id, source, time}
     // accept data
     let listenHandle = (data, sendData) => {
-        let sendFun = send;
-        if (sendData) {
-            sendFun = sender(sendData);
-        }
+        let sendFun = sendData ? sender(sendData) : send;
+
         switch (data.type) {
             case 'response':
-                return unPackRes(data);
+                return packer.unPackRes(data);
             case 'request':
-                return packRes(
-                    dealReq(
-                        unPackReq(data),
-                        box,
-                        call
-                    ),
-                    data
-                ).then(sendFun);
+                return handleRequest(data, sendFun);
             default:
                 break;
         }
     };
 
-    if (listen) {
+    if (listen) { // listen on the data
         listen(listenHandle);
     }
-
-    // add detect prop
-    // TODO if connection closed at this time, should throw an specific exception
-    let abortHandler = observe();
-    // wait for abort
-    options.onabort(abortHandler);
-
-    let call = detect(funType((name, args = [], type = 'public') => {
-        // data = {id, source, time}
-        let {
-            data, result
-        } = packReq(name, args, type, box);
-
-        send(data);
-
-        // detect aborting
-        result = abortHandler.during(result).then(({
-            happened,
-            ret
-        }) => {
-            if (happened) {
-                let err = new Error(`abort happened during calling. Abrot message is ${ret}`);
-                err.type = 'call-abort';
-                throw err;
-            } else {
-                return ret;
-            }
-        });
-
-        let clearCallback = () => forEach(args, (arg) => {
-            if (isFunction(arg) && arg.onlyInCall) {
-                box.systembox.removeCallback(arg);
-            }
-        });
-
-        result.then(clearCallback).catch(clearCallback);
-
-        return result;
-    }, [
-        isString,
-        or(likeArray, isFalsy),
-        or(isString, isFalsy)
-    ]));
-
-    // detect connection
-    detect(call);
-
-    // lambda support
-    call.runLam = (lamDsl) => call('lambda', [dsl.getJson(lamDsl)], 'system');
-
-    call.lamDsl = dsl;
 
     return call;
 }, [

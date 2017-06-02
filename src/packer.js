@@ -60,7 +60,7 @@ module.exports = () => {
      */
     let packReq = (name, args, type, box) => {
         let {
-            data, result
+            message, receipt
         } = produce({
             type,
             name,
@@ -76,9 +76,9 @@ module.exports = () => {
         return {
             data: {
                 type: 'request',
-                data
+                data: message
             },
-            result
+            result: receipt
         };
     };
 

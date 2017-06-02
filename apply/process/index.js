@@ -4,18 +4,22 @@ let {
     pc
 } = require('../..');
 
-let remoteCall = (p, sandbox = {}) => {
+let {
+    mergeMap
+} = require('bolzano');
+
+let remoteCall = (p, sandbox = {}, options) => {
     return pc((handler, send) => {
         // listen on data
         p.on('message', (data) => {
             handler(data, send);
         });
-    }, (msg) => p.send(msg), sandbox, {
+    }, (msg) => p.send(msg), sandbox, mergeMap({
         onabort: (handler) => {
             // if process p exits, abort calling
             p.on('exit', handler);
         }
-    });
+    }, options));
 };
 
 let child = (sandbox) => {

@@ -11,7 +11,7 @@ module.exports = () => {
      * message center
      */
 
-    let addModule = (name, sandbox) => {
+    let addModule = (name, sandbox, options) => {
         let module = {
             sandbox
         };
@@ -24,10 +24,10 @@ module.exports = () => {
                 return handler(msg, callHandler);
             };
 
-        }, null, sandbox);
+        }, null, sandbox, options);
     };
 
-    let moduleCaller = (moduleName) => {
+    let moduleCaller = (moduleName, options) => {
         let callHandler = null;
 
         return pc((handler) => {
@@ -41,7 +41,7 @@ module.exports = () => {
                 msg,
                 callHandler
             });
-        });
+        }, {}, options);
     };
 
     return {
