@@ -2,7 +2,7 @@
 
 let {
     pc, mirrorPredicateSet
-} = require('..');
+} = require('../..');
 
 let assert = require('assert');
 

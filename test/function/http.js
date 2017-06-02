@@ -1,26 +1,28 @@
 'use strict';
 
 let {
-    reqCaller, midder
-} = require('../apply/http');
+    midder
+} = require('../../apply/http');
 let {
-    mirrorBox
-} = require('..');
+    mirrorBox, convertRequest
+} = require('../..');
 let http = require('http');
 let requestor = require('cl-requestor');
 let httpRequest = requestor('http');
 let assert = require('assert');
 
 let clientCall = () => {
-    return reqCaller((str) => {
+    return convertRequest((data) => {
         return httpRequest({
             hostname: '127.0.0.1',
             path: '/api',
             port: 8088,
             method: 'POST'
-        }, str).then(({
+        }, JSON.stringify(data)).then(({
             body
-        }) => body);
+        }) => {
+            return JSON.parse(body);
+        });
     });
 };
 

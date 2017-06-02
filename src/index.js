@@ -12,6 +12,8 @@ let mirrorPredicateSet = require('./util/mirrorPredicates');
 
 let callWithAbort = require('./caller/callWithAbort');
 
+let convertRequest = require('./convert/request');
+
 module.exports = {
     stringify,
     parseJSON,
@@ -19,5 +21,6 @@ module.exports = {
     callWithAbort,
     mirrorBox,
     mirrorPredicateSet,
+    convertRequest,
     bridge: pc
 };

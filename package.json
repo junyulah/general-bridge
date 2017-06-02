@@ -1,10 +1,10 @@
 {
   "name": "general-bridge",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "general bridge library",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/*.js",
+    "test": "mocha \"test/function/**/*.js\"",
     "cover": "istanbul cover _mocha"
   },
   "repository": {
@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/LoveKino/general-bridge#readme",
   "devDependencies": {
+    "browser-js-env": "0.0.10",
     "cl-requestor": "0.0.3",
     "istanbul": "^0.4.5",
     "mocha": "^3.0.2"

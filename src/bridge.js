@@ -72,14 +72,14 @@ let Caller = require('./caller');
 module.exports = funType((listen, originSend, sandbox, options = {}) => {
     let sender = (originSend) => (requestObj) => {
         try {
-            let sendRet = originSend(requestObj);
+            let receipt = originSend(requestObj);
             if (!listen) {
-                if (!isPromise(sendRet)) {
-                    throw new Error(`there is no listener and response of sending is not a promise. response is ${sendRet}`);
+                if (!isPromise(receipt)) {
+                    throw new Error(`there is no listener and response of sending is not a promise. response is ${receipt}`);
                 }
 
                 // listen for response data
-                sendRet.then(listenHandle).catch(err => listenHandle(packer.packRes(err, requestObj)));
+                receipt.then(listenHandle).catch(err => listenHandle(packer.packRes(err, requestObj)));
             }
         } catch (err) {
             return packer.packRes(err, requestObj).then(packer.unPackRes);
@@ -101,8 +101,6 @@ module.exports = funType((listen, originSend, sandbox, options = {}) => {
                 return packer.unPackRes(data);
             case 'request':
                 return handleRequest(data, sendFun);
-            default:
-                break;
         }
     };
 

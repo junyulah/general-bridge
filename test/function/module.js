@@ -1,6 +1,6 @@
 'use strict';
 
-let Module = require('../apply/module');
+let Module = require('../../apply/module');
 
 let assert = require('assert');
 

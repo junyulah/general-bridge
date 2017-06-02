@@ -10,7 +10,7 @@ let assert = require('assert');
 
 let {
     parent
-} = require('../apply/process');
+} = require('../../apply/process');
 
 let {
     delay
@@ -18,7 +18,7 @@ let {
 
 describe('process', () => {
     it('base', () => {
-        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let child = fork(path.join(__dirname, '../fixture/test.js'));
 
         let call = parent(child, {
             sub: (a, b) => a - b
@@ -36,7 +36,7 @@ describe('process', () => {
     });
 
     it('missing sandbox', (done) => {
-        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let child = fork(path.join(__dirname, '../fixture/test.js'));
 
         let call = parent(child, {
             sub: (a, b) => a - b
@@ -49,7 +49,7 @@ describe('process', () => {
     });
 
     it('error carry some data', (done) => {
-        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let child = fork(path.join(__dirname, '../fixture/test.js'));
 
         let call = parent(child, {});
 
@@ -60,7 +60,7 @@ describe('process', () => {
     });
 
     it('reject error carry some data', (done) => {
-        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let child = fork(path.join(__dirname, '../fixture/test.js'));
 
         let call = parent(child, {});
 
@@ -71,7 +71,7 @@ describe('process', () => {
     });
 
     it('detect', () => {
-        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let child = fork(path.join(__dirname, '../fixture/test.js'));
 
         let call = parent(child, {
             sub: (a, b) => a - b
@@ -83,7 +83,7 @@ describe('process', () => {
     });
 
     it('callback', () => {
-        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let child = fork(path.join(__dirname, '../fixture/test.js'));
 
         let call = parent(child);
 
@@ -96,7 +96,7 @@ describe('process', () => {
     });
 
     it('callback2', () => {
-        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let child = fork(path.join(__dirname, '../fixture/test.js'));
 
         let call = parent(child);
 
@@ -116,7 +116,7 @@ describe('process', () => {
     });
 
     it('abort', () => {
-        let child = fork(path.join(__dirname, './fixture/test.js'));
+        let child = fork(path.join(__dirname, '../fixture/test.js'));
         let call = parent(child);
 
         delay(50).then(() => {

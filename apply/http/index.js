@@ -5,10 +5,6 @@ let {
 } = require('../..');
 
 module.exports = {
-    reqCaller: (request) => {
-        return bridge(null, (msg) => request(stringify(msg)).then(parseJSON));
-    },
-
     midder: (sandbox, options) => {
         let reqHandler = null;
 
