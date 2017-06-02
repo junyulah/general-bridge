@@ -1,7 +1,7 @@
 'use strict';
 
 let {
-    pc
+    bridge
 } = require('../..');
 
 let {
@@ -9,7 +9,7 @@ let {
 } = require('bolzano');
 
 let remoteCall = (p, sandbox = {}, options) => {
-    return pc((handler, send) => {
+    return bridge((handler, send) => {
         // listen on data
         p.on('message', (data) => {
             handler(data, send);

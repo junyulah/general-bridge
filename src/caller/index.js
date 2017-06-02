@@ -16,7 +16,11 @@ let {
     forEach
 } = require('bolzano');
 
-module.exports = (packer, box, send, onabort) => {
+let id = v => v;
+
+module.exports = (packer, box, send, {
+    onabort = id, waitTime, retryTimes
+}) => {
     // add detect prop
     // TODO if connection closed at this time, should throw an specific exception
     let abortHandler = observe();
@@ -24,15 +28,14 @@ module.exports = (packer, box, send, onabort) => {
     onabort(abortHandler);
 
     let call = detect(funType((name, args = [], type = 'public') => {
-        // data = {id, source, time}
         let {
-            data, result
+            message, receipt
         } = packer.packReq(name, args, type, box);
 
-        send(data);
+        send(message);
 
         // detect aborting
-        result = abortHandler.during(result).then(({
+        receipt = abortHandler.during(receipt).then(({
             happened,
             ret
         }) => {
@@ -51,14 +54,17 @@ module.exports = (packer, box, send, onabort) => {
             }
         });
 
-        result.then(clearCallback).catch(clearCallback);
+        receipt.then(clearCallback).catch(clearCallback);
 
-        return result;
+        return receipt;
     }, [
         isString,
         or(likeArray, isFalsy),
         or(isString, isFalsy)
-    ]));
+    ]), {
+        waitTime,
+        retryTimes
+    });
 
     // lambda support
     call.runLam = (lamDsl) => call('lambda', [dsl.getJson(lamDsl)], 'system');

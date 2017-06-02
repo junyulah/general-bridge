@@ -74,11 +74,11 @@ module.exports = () => {
         });
 
         return {
-            data: {
+            message: {
                 type: 'request',
                 data: message
             },
-            result: receipt
+            receipt
         };
     };
 

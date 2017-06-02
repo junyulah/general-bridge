@@ -1,7 +1,7 @@
 'use strict';
 
 let {
-    pc
+    bridge
 } = require('../..');
 
 module.exports = () => {
@@ -17,7 +17,7 @@ module.exports = () => {
         };
         modules[name] = module;
 
-        pc((handler) => {
+        bridge((handler) => {
             module.dealHandler = ({
                 msg, callHandler
             }) => {
@@ -30,7 +30,7 @@ module.exports = () => {
     let moduleCaller = (moduleName, options) => {
         let callHandler = null;
 
-        return pc((handler) => {
+        return bridge((handler) => {
             callHandler = handler;
         }, (msg) => {
             let module = modules[moduleName];

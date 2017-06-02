@@ -1,18 +1,18 @@
 'use strict';
 
 let {
-    stringify, parseJSON, pc
+    stringify, parseJSON, bridge
 } = require('../..');
 
 module.exports = {
     reqCaller: (request) => {
-        return pc(null, (msg) => request(stringify(msg)).then(parseJSON));
+        return bridge(null, (msg) => request(stringify(msg)).then(parseJSON));
     },
 
     midder: (sandbox, options) => {
         let reqHandler = null;
 
-        pc((handler) => {
+        bridge((handler) => {
             reqHandler = handler;
         }, null, sandbox, options);
 

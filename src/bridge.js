@@ -86,11 +86,10 @@ module.exports = funType((listen, originSend, sandbox, options = {}) => {
         }
     };
 
-    // data = {id, error, data}
     let send = sender(originSend);
     let packer = Packer();
     let box = expandBox(sandbox, options);
-    let call = Caller(packer, box, send, options.onabort || id);
+    let call = Caller(packer, box, send, options);
     let handleRequest = HandleRequest(box, packer, call);
 
     // accept data
@@ -118,5 +117,3 @@ module.exports = funType((listen, originSend, sandbox, options = {}) => {
     or(isFalsy, isObject),
     or(isFalsy, isObject)
 ]);
-
-let id = v => v;
